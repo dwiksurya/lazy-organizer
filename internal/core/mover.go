@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"encoding/json"
@@ -20,13 +20,13 @@ type History struct {
 
 const historyFile = ".lazy-organizer-history.json"
 
-func historyPath(dir string) string {
+func HistoryPath(dir string) string {
 	return filepath.Join(dir, historyFile)
 }
 
 func LoadHistory(dir string) (*History, error) {
 	h := &History{}
-	data, err := os.ReadFile(historyPath(dir))
+	data, err := os.ReadFile(HistoryPath(dir))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return h, nil
@@ -42,7 +42,7 @@ func SaveHistory(dir string, h *History) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(historyPath(dir), data, 0644)
+	return os.WriteFile(HistoryPath(dir), data, 0644)
 }
 
 func Move(dir string, f FileInfo) error {
@@ -123,6 +123,6 @@ func UndoAll(dir string) error {
 		parent := filepath.Dir(m.To)
 		os.Remove(parent)
 	}
-	os.Remove(historyPath(dir))
+	os.Remove(HistoryPath(dir))
 	return nil
 }

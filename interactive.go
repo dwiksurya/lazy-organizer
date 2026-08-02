@@ -6,9 +6,11 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"lazy-organizer/internal/core"
 )
 
-func InteractiveClassify(files []FileInfo, cfg *Config) []FileInfo {
+func InteractiveClassify(files []core.FileInfo, cfg *core.Config) []core.FileInfo {
 	cats := cfg.ListCategories()
 	sort.Strings(cats)
 

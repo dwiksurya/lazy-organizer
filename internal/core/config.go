@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"fmt"
@@ -58,7 +58,7 @@ func LoadConfig(path string) (*Config, error) {
 	if cfg.Fallback == "" {
 		cfg.Fallback = "Others"
 	}
-	cfg.buildOrder()
+	cfg.BuildOrder()
 	return &cfg, nil
 }
 
@@ -78,11 +78,11 @@ func DefaultConfig() *Config {
 		},
 		Fallback: "Others",
 	}
-	cfg.buildOrder()
+	cfg.BuildOrder()
 	return cfg
 }
 
-func (c *Config) buildOrder() {
+func (c *Config) BuildOrder() {
 	c.orderedCats = make([]string, 0, len(c.Categories))
 	for cat := range c.Categories {
 		c.orderedCats = append(c.orderedCats, cat)

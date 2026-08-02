@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"lazy-organizer/internal/core"
 )
 
 var scanner = bufio.NewScanner(os.Stdin)
@@ -18,9 +20,9 @@ func readLine(prompt string) string {
 }
 
 func RunTUI(cfgPath string) error {
-	cfg, err := LoadConfig(cfgPath)
+	cfg, err := core.LoadConfig(cfgPath)
 	if err != nil {
-		cfg = DefaultConfig()
+		cfg = core.DefaultConfig()
 		fmt.Println("(config not found, using defaults)")
 	}
 
@@ -51,7 +53,7 @@ func RunTUI(cfgPath string) error {
 		case "5":
 			editFallback(cfg)
 		case "6":
-			cfg = DefaultConfig()
+			cfg = core.DefaultConfig()
 			fmt.Println("✓ Reset to defaults")
 		case "0":
 			return saveConfig(cfgPath, cfg)
@@ -61,9 +63,9 @@ func RunTUI(cfgPath string) error {
 	}
 }
 
-func showCategories(cfg *Config) {
+func showCategories(cfg *core.Config) {
 	fmt.Printf("\n  Fallback: %s\n\n", cfg.Fallback)
-	for _, name := range cfg.orderedCats {
+	for _, name := range cfg.ListCategories() {
 		rule := cfg.Categories[name]
 		fmt.Printf("  [%s]\n", name)
 		fmt.Printf("    extensions: %s\n", strings.Join(rule.Extensions, ", "))
@@ -74,8 +76,8 @@ func showCategories(cfg *Config) {
 	}
 }
 
-func editCategory(cfg *Config) {
-	cats := cfg.orderedCats
+func editCategory(cfg *core.Config) {
+	cats := cfg.ListCategories()
 	fmt.Println("\n  Categories:")
 	for i, c := range cats {
 		fmt.Printf("    %d) %s\n", i+1, c)
@@ -88,10 +90,14 @@ func editCategory(cfg *Config) {
 			break
 		}
 	}
-	if idx < 0 {
+	if idx < 0 || idx >= len(cats) {
 		return
 	}
 	name := cats[idx]
+	if name == cfg.Fallback {
+		fmt.Println("  Cannot edit fallback here (use option 5)")
+		return
+	}
 	rule := cfg.Categories[name]
 
 	fmt.Printf("\n  Edit [%s]\n", name)
@@ -110,11 +116,11 @@ func editCategory(cfg *Config) {
 	}
 
 	cfg.Categories[name] = rule
-	cfg.buildOrder()
+	cfg.BuildOrder()
 	fmt.Printf("  ✓ [%s] updated\n", name)
 }
 
-func addCategory(cfg *Config) {
+func addCategory(cfg *core.Config) {
 	name := readLine("\n  New category name: ")
 	if name == "" {
 		return
@@ -125,16 +131,16 @@ func addCategory(cfg *Config) {
 	}
 	ext := readLine("  Extensions (comma-separated): ")
 	kw := readLine("  Keywords (comma-separated): ")
-	cfg.Categories[name] = CategoryRule{
+	cfg.Categories[name] = core.CategoryRule{
 		Extensions: parseCSV(ext),
 		Keywords:   parseCSV(kw),
 	}
-	cfg.buildOrder()
+	cfg.BuildOrder()
 	fmt.Printf("  ✓ [%s] added\n", name)
 }
 
-func deleteCategory(cfg *Config) {
-	cats := cfg.orderedCats
+func deleteCategory(cfg *core.Config) {
+	cats := cfg.ListCategories()
 	fmt.Println("\n  Categories:")
 	for i, c := range cats {
 		fmt.Printf("    %d) %s\n", i+1, c)
@@ -147,19 +153,23 @@ func deleteCategory(cfg *Config) {
 			break
 		}
 	}
-	if idx < 0 {
+	if idx < 0 || idx >= len(cats) {
 		return
 	}
 	name := cats[idx]
+	if name == cfg.Fallback {
+		fmt.Println("  Cannot delete fallback")
+		return
+	}
 	confirm := readLine(fmt.Sprintf("  Delete [%s]? (y/N): ", name))
 	if confirm == "y" || confirm == "Y" {
 		delete(cfg.Categories, name)
-		cfg.buildOrder()
+		cfg.BuildOrder()
 		fmt.Printf("  ✓ [%s] deleted\n", name)
 	}
 }
 
-func editFallback(cfg *Config) {
+func editFallback(cfg *core.Config) {
 	fmt.Printf("\n  Current fallback: %s\n", cfg.Fallback)
 	new := readLine("  New fallback: ")
 	if new != "" {
@@ -181,7 +191,7 @@ func parseCSV(s string) []string {
 	return result
 }
 
-func saveConfig(path string, cfg *Config) error {
+func saveConfig(path string, cfg *core.Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
@@ -193,12 +203,15 @@ func saveConfig(path string, cfg *Config) error {
 	return nil
 }
 
-func cfgToYAML(cfg *Config) string {
+func cfgToYAML(cfg *core.Config) string {
 	var b strings.Builder
 	b.WriteString("# lazy-organizer categories\n")
 	b.WriteString("# Priority: extension > keyword > fallback\n\n")
 	b.WriteString("categories:\n")
-	for _, cat := range cfg.orderedCats {
+	for _, cat := range cfg.ListCategories() {
+		if cat == cfg.Fallback {
+			continue
+		}
 		rule := cfg.Categories[cat]
 		fmt.Fprintf(&b, "  %s:\n", cat)
 		fmt.Fprintf(&b, "    extensions: [%s]\n", strings.Join(rule.Extensions, ", "))

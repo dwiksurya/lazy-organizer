@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"text/tabwriter"
+
+	"lazy-organizer/internal/core"
 )
 
 func main() {
@@ -22,7 +24,7 @@ func main() {
 
 	cfgPath := *configPath
 	if cfgPath == "" {
-		cfgPath = DefaultConfigPath()
+		cfgPath = core.DefaultConfigPath()
 	}
 
 	if *gui {
@@ -36,9 +38,9 @@ func main() {
 	if *initCfg {
 		path := *configPath
 		if path == "" {
-			path = DefaultConfigPath()
+			path = core.DefaultConfigPath()
 		}
-		if err := GenerateConfig(path); err != nil {
+		if err := core.GenerateConfig(path); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
@@ -46,17 +48,17 @@ func main() {
 		return
 	}
 
-	cfg, err := LoadConfig(cfgPath)
+	cfg, err := core.LoadConfig(cfgPath)
 	if err != nil {
-		cfg = DefaultConfig()
+		cfg = core.DefaultConfig()
 		fmt.Fprintf(os.Stderr, "warn: config not found (%v), using defaults\n", err)
-		fmt.Fprintf(os.Stderr, "  tip: run -init-config to generate %s\n", DefaultConfigPath())
+		fmt.Fprintf(os.Stderr, "  tip: run -init-config to generate %s\n", core.DefaultConfigPath())
 	}
 
 	absDir, _ := filepath.Abs(*dir)
 
 	if *undo {
-		if err := UndoAll(absDir); err != nil {
+		if err := core.UndoAll(absDir); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
@@ -64,7 +66,7 @@ func main() {
 		return
 	}
 
-	files, err := Scan(absDir, cfg)
+	files, err := core.Scan(absDir, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -103,7 +105,7 @@ func main() {
 
 	moved := 0
 	for _, f := range files {
-		if err := Move(absDir, f); err != nil {
+		if err := core.Move(absDir, f); err != nil {
 			fmt.Fprintf(os.Stderr, "skip %s: %v\n", f.Name, err)
 			continue
 		}

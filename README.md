@@ -1,45 +1,49 @@
 # lazy-organizer
 
-CLI tool to organize messy folders. Categories customizable via config file. Cross-platform: macOS, Linux, Windows.
+CLI + Desktop app to organize messy folders. Cross-platform: macOS, Linux, Windows.
 
-## Install
+## Quick Start — CLI
 
 ```bash
+# Build
 go build -o lazy-organizer .
 
-# cross-compile:
-GOOS=linux   GOARCH=amd64 go build -o lazy-organizer-linux-amd64 .
-GOOS=darwin  GOARCH=arm64 go build -o lazy-organizer-darwin-arm64 .
-GOOS=windows GOARCH=amd64 go build -o lazy-organizer-windows-amd64.exe .
-```
-
-## Quick Start
-
-```bash
-# 1. Generate config (edit as needed)
+# Generate config
 ./lazy-organizer -init-config
-# config path per OS:
-#   Linux:   ~/.config/lazy-organizer/categories.yaml
-#   macOS:   ~/Library/Application Support/lazy-organizer/categories.yaml
-#   Windows: %APPDATA%\lazy-organizer\categories.yaml
 
-# 2. Preview (nothing is moved)
+# Preview (nothing is moved)
 ./lazy-organizer -dir ~/Downloads -dry-run
 
-# 3. Organize
+# Organize
 ./lazy-organizer -dir ~/Downloads
 
-# 4. Interactive mode (choose category per file)
+# Interactive mode (choose category per file)
 ./lazy-organizer -dir ~/Downloads -interactive
 
-# 5. Undo
+# Undo
 ./lazy-organizer -dir ~/Downloads -undo
 
-# 6. TUI config editor
+# TUI config editor
 ./lazy-organizer -gui
 ```
 
-## Flags
+## Quick Start — Desktop App
+
+```bash
+# Install system deps (Linux only)
+sudo apt-get install -y libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
+
+# Build
+go build -o lazy-organizer-gui ./cmd/gui/
+
+# Run
+./lazy-organizer-gui
+```
+
+**macOS:** No extra deps (Xcode CLI tools sufficient)
+**Windows:** Requires MinGW-w64 for CGO
+
+## CLI Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -52,16 +56,46 @@ GOOS=windows GOARCH=amd64 go build -o lazy-organizer-windows-amd64.exe .
 | `-init-config` | false | Generate default config and exit |
 | `-gui` | false | Open TUI config editor |
 
+## Desktop App Features
+
+- **📂 Select Folder** — native folder picker
+- **File Table** — shows all files with Name, Extension, Category
+- **Category Dropdown** — click category cell to change
+- **▶ Organize** — move files with confirmation dialog
+- **↩ Undo** — revert last organization
+- **⚙ Config Editor** — edit/add/delete categories in GUI
+
 ## Classifier
 
 Files are classified by two methods (first match wins):
 
 1. **Extension** — `.pdf` → Documents, `.jpg` → Images, etc.
-2. **Keyword** — filename substring match. `invoice_march.bin` → Documents (keyword "invoice"), `screenshot_bug.xyz` → Images (keyword "screenshot")
+2. **Keyword** — filename substring match. `invoice_march.bin` → Documents (keyword "invoice")
+
+## Project Structure
+
+```
+lazy-organizer/
+├── internal/core/          ← shared logic (config, scanner, mover)
+│   ├── config.go           ← YAML config + classifier
+│   ├── scanner.go          ← directory scanner
+│   ├── mover.go            ← file mover + undo
+│   └── core_test.go        ← 7 tests
+├── cmd/gui/                ← desktop app (Fyne)
+│   └── main.go             ← GUI with file table + config editor
+├── main.go                 ← CLI entry point
+├── interactive.go          ← CLI interactive mode
+├── tui.go                  ← CLI TUI config editor
+├── Makefile                ← build targets
+└── README.md
+```
 
 ## Custom Categories
 
 Edit `categories.yaml` (path depends on OS):
+- Linux: `~/.config/lazy-organizer/categories.yaml`
+- macOS: `~/Library/Application Support/lazy-organizer/categories.yaml`
+- Windows: `%APPDATA%\lazy-organizer\categories.yaml`
 
 ```yaml
 categories:
@@ -76,6 +110,19 @@ categories:
     keywords: [mykeyword]
 
 fallback: Others
+```
+
+## Cross-Compile
+
+```bash
+# CLI (pure Go — no CGO)
+make cross-cli
+
+# GUI (requires CGO — use fyne-cross)
+go install github.com/fyne-io/fyne-cross@latest
+fyne-cross linux -arch amd64,arm64
+fyne-cross darwin -arch amd64,arm64
+fyne-cross windows -arch amd64
 ```
 
 ## License

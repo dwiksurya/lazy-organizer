@@ -44,15 +44,15 @@ func main() {
 		cfgPath: cfgPath,
 	}
 
-	// Toolbar
-	folderBtn := widget.NewButton("📂 Select Folder", myApp.selectFolder)
+	// Toolbar — no icons, clean text only
+	folderBtn := widget.NewButton("Select Folder", myApp.selectFolder)
 	folderBtn.Importance = widget.HighImportance
 
-	myApp.organizeBtn = widget.NewButton("▶ Organize", myApp.organize)
+	myApp.organizeBtn = widget.NewButton("Organize", myApp.organize)
 	myApp.organizeBtn.Disable()
-	myApp.undoBtn = widget.NewButton("↩ Undo", myApp.undo)
+	myApp.undoBtn = widget.NewButton("Undo", myApp.undo)
 	myApp.undoBtn.Disable()
-	configBtn := widget.NewButton("⚙ Config", myApp.showConfigEditor)
+	configBtn := widget.NewButton("Config", myApp.showConfigEditor)
 
 	toolbar := container.NewHBox(folderBtn, widget.NewSeparator(), myApp.organizeBtn, myApp.undoBtn, widget.NewSeparator(), configBtn)
 
@@ -114,7 +114,7 @@ func (a *App) organize() {
 				}
 				moved++
 			}
-			a.statusLbl.SetText(fmt.Sprintf("✓ Moved %d/%d files (use Undo to revert)", moved, len(a.files)))
+			a.statusLbl.SetText(fmt.Sprintf("Moved %d/%d files (use Undo to revert)", moved, len(a.files)))
 			a.scanDir()
 		},
 		a.window,
@@ -126,7 +126,7 @@ func (a *App) undo() {
 		dialog.ShowError(err, a.window)
 		return
 	}
-	a.statusLbl.SetText("✓ Undo complete")
+	a.statusLbl.SetText("Undo complete")
 	a.scanDir()
 }
 
@@ -143,7 +143,6 @@ func (a *App) makeTable() *widget.Table {
 		func(id widget.TableCellID, obj fyne.CanvasObject) {
 			label := obj.(*widget.Label)
 			if id.Row == 0 {
-				// Header row
 				switch id.Col {
 				case 0:
 					label.SetText("Name")
@@ -157,7 +156,6 @@ func (a *App) makeTable() *widget.Table {
 				}
 				return
 			}
-			// Data rows
 			label.TextStyle = fyne.TextStyle{}
 			if id.Row-1 >= len(a.files) {
 				label.SetText("")
@@ -224,74 +222,96 @@ func (a *App) showConfigEditor() {
 	list := widget.NewList(
 		func() int { return len(orderedCats) },
 		func() fyne.CanvasObject {
-			return widget.NewLabel("category name")
+			label := widget.NewLabel("category name")
+			label.Wrapping = fyne.TextTruncate
+			return label
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
-			obj.(*widget.Label).SetText(orderedCats[id])
+			name := orderedCats[id]
+			rule := categories[name]
+			detail := fmt.Sprintf("%s  (%d ext, %d kw)", name, len(rule.Extensions), len(rule.Keywords))
+			if name == a.cfg.Fallback {
+				detail = fmt.Sprintf("%s  [fallback]", name)
+			}
+			obj.(*widget.Label).SetText(detail)
 		},
 	)
 
 	list.OnSelected = func(id widget.ListItemID) {
 		name := orderedCats[id]
 		if name == a.cfg.Fallback {
-			dialog.ShowInformation("Fallback", fmt.Sprintf("Fallback category: %s\n\nEdit in the 'Edit Fallback' option.", a.cfg.Fallback), a.window)
+			a.showEditFallbackDialog()
 			list.UnselectAll()
 			return
 		}
 		rule := categories[name]
-		a.showCategoryEditor(name, rule)
+		a.showCategoryEditor(name, rule, func() {
+			list.Refresh()
+		})
 		list.UnselectAll()
 	}
 
-	// Add category button
-	addBtn := widget.NewButton("+ Add Category", func() {
-		a.showAddCategoryDialog()
+	// Buttons
+	addBtn := widget.NewButton("Add Category", func() {
+		a.showAddCategoryDialog(func() {
+			// refresh list after add
+			orderedCats = a.cfg.ListCategories()
+			list.Refresh()
+		})
 	})
 
-	// Edit fallback button
 	fallbackBtn := widget.NewButton(fmt.Sprintf("Fallback: %s", a.cfg.Fallback), func() {
 		a.showEditFallbackDialog()
 	})
 
-	// Reset button
 	resetBtn := widget.NewButton("Reset to Defaults", func() {
 		dialog.ShowConfirm("Reset", "Reset all categories to defaults?", func(ok bool) {
 			if ok {
 				a.cfg = core.DefaultConfig()
 				a.saveConfig()
-				dialog.ShowInformation("Done", "Config reset to defaults", a.window)
+				orderedCats = a.cfg.ListCategories()
+				categories = a.cfg.Categories
+				list.Refresh()
+				fallbackBtn.SetText(fmt.Sprintf("Fallback: %s", a.cfg.Fallback))
 			}
 		}, a.window)
 	})
 
-	content := container.NewBorder(
-		container.NewVBox(
-			widget.NewLabel("Click a category to edit:"),
-			container.NewHBox(addBtn, fallbackBtn, resetBtn),
-		),
-		nil, nil, nil,
-		list,
+	header := container.NewVBox(
+		widget.NewLabel("Click a category to edit it"),
+		container.NewHBox(addBtn, fallbackBtn, resetBtn),
+		widget.NewSeparator(),
 	)
 
-	dialog.ShowCustom("Config Editor", "Close", content, a.window)
+	content := container.NewBorder(header, nil, nil, nil, list)
+	// Wrap in a container with minimum size so the dialog is large enough
+	wrapper := container.New(layout.NewMaxLayout(), content)
+	wrapper.Resize(fyne.NewSize(550, 450))
+
+	// Use a custom dialog with explicit size
+	d := dialog.NewCustom("Config Editor", "Close", wrapper, a.window)
+	d.Resize(fyne.NewSize(550, 450))
+	d.Show()
 }
 
-func (a *App) showCategoryEditor(name string, rule core.CategoryRule) {
+func (a *App) showCategoryEditor(name string, rule core.CategoryRule, onSaved func()) {
 	extEntry := widget.NewMultiLineEntry()
 	extEntry.SetText(strings.Join(rule.Extensions, "\n"))
-	extEntry.SetMinRowsVisible(3)
+	extEntry.SetMinRowsVisible(6)
 
 	kwEntry := widget.NewMultiLineEntry()
 	kwEntry.SetText(strings.Join(rule.Keywords, "\n"))
-	kwEntry.SetMinRowsVisible(3)
+	kwEntry.SetMinRowsVisible(6)
 
-	// Delete button
 	deleteBtn := widget.NewButton("Delete Category", func() {
 		dialog.ShowConfirm("Delete", fmt.Sprintf("Delete category [%s]?", name), func(ok bool) {
 			if ok {
 				delete(a.cfg.Categories, name)
 				a.cfg.BuildOrder()
 				a.saveConfig()
+				if onSaved != nil {
+					onSaved()
+				}
 			}
 		}, a.window)
 	})
@@ -302,13 +322,18 @@ func (a *App) showCategoryEditor(name string, rule core.CategoryRule) {
 		widget.NewSeparator(),
 		widget.NewLabel("Extensions (one per line):"),
 		extEntry,
+		widget.NewSeparator(),
 		widget.NewLabel("Keywords (one per line):"),
 		kwEntry,
 		widget.NewSeparator(),
 		container.NewHBox(layout.NewSpacer(), deleteBtn),
 	)
 
-	dialog.ShowCustomConfirm(fmt.Sprintf("Edit: %s", name), "Save", "Cancel", form, func(ok bool) {
+	// Scroll wrapper so content doesn't clip
+	scroll := container.NewVScroll(form)
+	scroll.SetMinSize(fyne.NewSize(500, 420))
+
+	d := dialog.NewCustomConfirm(fmt.Sprintf("Edit: %s", name), "Save", "Cancel", scroll, func(ok bool) {
 		if !ok {
 			return
 		}
@@ -317,20 +342,25 @@ func (a *App) showCategoryEditor(name string, rule core.CategoryRule) {
 		a.cfg.Categories[name] = rule
 		a.cfg.BuildOrder()
 		a.saveConfig()
+		if onSaved != nil {
+			onSaved()
+		}
 	}, a.window)
+	d.Resize(fyne.NewSize(520, 480))
+	d.Show()
 }
 
-func (a *App) showAddCategoryDialog() {
+func (a *App) showAddCategoryDialog(onSaved func()) {
 	nameEntry := widget.NewEntry()
 	nameEntry.SetPlaceHolder("Category name")
 
 	extEntry := widget.NewMultiLineEntry()
 	extEntry.SetPlaceHolder(".ext1\n.ext2")
-	extEntry.SetMinRowsVisible(3)
+	extEntry.SetMinRowsVisible(5)
 
 	kwEntry := widget.NewMultiLineEntry()
 	kwEntry.SetPlaceHolder("keyword1\nkeyword2")
-	kwEntry.SetMinRowsVisible(3)
+	kwEntry.SetMinRowsVisible(5)
 
 	form := container.NewVBox(
 		widget.NewLabel("Add New Category"),
@@ -343,7 +373,10 @@ func (a *App) showAddCategoryDialog() {
 		kwEntry,
 	)
 
-	dialog.ShowCustomConfirm("Add Category", "Add", "Cancel", form, func(ok bool) {
+	scroll := container.NewVScroll(form)
+	scroll.SetMinSize(fyne.NewSize(500, 380))
+
+	d := dialog.NewCustomConfirm("Add Category", "Add", "Cancel", scroll, func(ok bool) {
 		if !ok || nameEntry.Text == "" {
 			return
 		}
@@ -357,7 +390,12 @@ func (a *App) showAddCategoryDialog() {
 		}
 		a.cfg.BuildOrder()
 		a.saveConfig()
+		if onSaved != nil {
+			onSaved()
+		}
 	}, a.window)
+	d.Resize(fyne.NewSize(520, 440))
+	d.Show()
 }
 
 func (a *App) showEditFallbackDialog() {
@@ -371,22 +409,23 @@ func (a *App) showEditFallbackDialog() {
 		entry,
 	)
 
-	dialog.ShowCustomConfirm("Edit Fallback", "Save", "Cancel", form, func(ok bool) {
+	d := dialog.NewCustomConfirm("Edit Fallback", "Save", "Cancel", form, func(ok bool) {
 		if !ok || entry.Text == "" {
 			return
 		}
 		a.cfg.Fallback = entry.Text
 		a.saveConfig()
 	}, a.window)
+	d.Resize(fyne.NewSize(400, 200))
+	d.Show()
 }
 
 func (a *App) saveConfig() {
 	if err := core.GenerateConfig(a.cfgPath); err != nil {
-		// If generate fails, try manual save
 		a.statusLbl.SetText("Warning: could not save config: " + err.Error())
 		return
 	}
-	a.statusLbl.SetText("✓ Config saved")
+	a.statusLbl.SetText("Config saved")
 }
 
 func parseLines(s string) []string {

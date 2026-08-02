@@ -1,42 +1,42 @@
-# file-organizer
+# lazy-organizer
 
 CLI tool to organize messy folders. Categories customizable via config file. Cross-platform: macOS, Linux, Windows.
 
 ## Install
 
 ```bash
-go build -o file-organizer .
+go build -o lazy-organizer .
 
 # cross-compile:
-GOOS=linux   GOARCH=amd64 go build -o file-organizer-linux-amd64 .
-GOOS=darwin  GOARCH=arm64 go build -o file-organizer-darwin-arm64 .
-GOOS=windows GOARCH=amd64 go build -o file-organizer-windows-amd64.exe .
+GOOS=linux   GOARCH=amd64 go build -o lazy-organizer-linux-amd64 .
+GOOS=darwin  GOARCH=arm64 go build -o lazy-organizer-darwin-arm64 .
+GOOS=windows GOARCH=amd64 go build -o lazy-organizer-windows-amd64.exe .
 ```
 
 ## Quick Start
 
 ```bash
 # 1. Generate config (edit as needed)
-./file-organizer -init-config
+./lazy-organizer -init-config
 # config path per OS:
-#   Linux:   ~/.config/file-organizer/categories.yaml
-#   macOS:   ~/Library/Application Support/file-organizer/categories.yaml
-#   Windows: %APPDATA%\file-organizer\categories.yaml
+#   Linux:   ~/.config/lazy-organizer/categories.yaml
+#   macOS:   ~/Library/Application Support/lazy-organizer/categories.yaml
+#   Windows: %APPDATA%\lazy-organizer\categories.yaml
 
 # 2. Preview (nothing is moved)
-./file-organizer -dir ~/Downloads -dry-run
+./lazy-organizer -dir ~/Downloads -dry-run
 
 # 3. Organize
-./file-organizer -dir ~/Downloads
+./lazy-organizer -dir ~/Downloads
 
 # 4. Interactive mode (choose category per file)
-./file-organizer -dir ~/Downloads -interactive
+./lazy-organizer -dir ~/Downloads -interactive
 
 # 5. Undo
-./file-organizer -dir ~/Downloads -undo
+./lazy-organizer -dir ~/Downloads -undo
 
 # 6. TUI config editor
-./file-organizer -gui
+./lazy-organizer -gui
 ```
 
 ## Flags

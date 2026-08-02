@@ -1,4 +1,4 @@
-module file-organizer
+module lazy-organizer
 
 go 1.22.5
 

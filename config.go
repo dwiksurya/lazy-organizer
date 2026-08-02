@@ -92,14 +92,14 @@ func (c *Config) buildOrder() {
 
 func DefaultConfigPath() string {
 	dir, _ := os.UserConfigDir()
-	return filepath.Join(dir, "file-organizer", "categories.yaml")
+	return filepath.Join(dir, "lazy-organizer", "categories.yaml")
 }
 
 func GenerateConfig(path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	content := `# file-organizer categories
+	content := `# lazy-organizer categories
 # Edit as needed.
 #
 # Each category has:

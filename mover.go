@@ -18,7 +18,7 @@ type History struct {
 	Moves []MoveRecord `json:"moves"`
 }
 
-const historyFile = ".file-organizer-history.json"
+const historyFile = ".lazy-organizer-history.json"
 
 func historyPath(dir string) string {
 	return filepath.Join(dir, historyFile)

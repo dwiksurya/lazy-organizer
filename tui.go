@@ -26,7 +26,7 @@ func RunTUI(cfgPath string) error {
 
 	for {
 		fmt.Println("\n╔══════════════════════════════════════╗")
-		fmt.Println("║   file-organizer — Config Editor     ║")
+		fmt.Println("║   lazy-organizer — Config Editor     ║")
 		fmt.Println("╠══════════════════════════════════════╣")
 		fmt.Println("║  1) List categories                  ║")
 		fmt.Println("║  2) Edit category                    ║")
@@ -195,7 +195,7 @@ func saveConfig(path string, cfg *Config) error {
 
 func cfgToYAML(cfg *Config) string {
 	var b strings.Builder
-	b.WriteString("# file-organizer categories\n")
+	b.WriteString("# lazy-organizer categories\n")
 	b.WriteString("# Priority: extension > keyword > fallback\n\n")
 	b.WriteString("categories:\n")
 	for _, cat := range cfg.orderedCats {

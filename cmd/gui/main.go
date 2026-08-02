@@ -415,11 +415,10 @@ func (a *App) showConfigEditor() {
 	)
 
 	content := container.NewBorder(header, nil, nil, nil, list)
-	wrapper := container.New(layout.NewMaxLayout(), content)
-	wrapper.Resize(fyne.NewSize(550, 450))
+	content.Resize(fyne.NewSize(600, 500))
 
-	d := dialog.NewCustom("Config Editor", "Close", wrapper, a.window)
-	d.Resize(fyne.NewSize(550, 450))
+	d := dialog.NewCustom("Config Editor", "Close", content, a.window)
+	d.Resize(fyne.NewSize(600, 500))
 	d.Show()
 }
 
@@ -459,7 +458,7 @@ func (a *App) showCategoryEditor(name string, rule core.CategoryRule, onSaved fu
 	)
 
 	scroll := container.NewVScroll(form)
-	scroll.SetMinSize(fyne.NewSize(500, 420))
+	scroll.SetMinSize(fyne.NewSize(580, 450))
 
 	d := dialog.NewCustomConfirm(fmt.Sprintf("Edit: %s", name), "Save", "Cancel", scroll, func(ok bool) {
 		if !ok {
@@ -474,7 +473,7 @@ func (a *App) showCategoryEditor(name string, rule core.CategoryRule, onSaved fu
 			onSaved()
 		}
 	}, a.window)
-	d.Resize(fyne.NewSize(520, 480))
+	d.Resize(fyne.NewSize(600, 500))
 	d.Show()
 }
 
@@ -502,7 +501,7 @@ func (a *App) showAddCategoryDialog(onSaved func()) {
 	)
 
 	scroll := container.NewVScroll(form)
-	scroll.SetMinSize(fyne.NewSize(500, 380))
+	scroll.SetMinSize(fyne.NewSize(580, 400))
 
 	d := dialog.NewCustomConfirm("Add Category", "Add", "Cancel", scroll, func(ok bool) {
 		if !ok || nameEntry.Text == "" {
@@ -522,7 +521,7 @@ func (a *App) showAddCategoryDialog(onSaved func()) {
 			onSaved()
 		}
 	}, a.window)
-	d.Resize(fyne.NewSize(520, 440))
+	d.Resize(fyne.NewSize(600, 460))
 	d.Show()
 }
 

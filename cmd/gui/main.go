@@ -20,9 +20,12 @@ type App struct {
 	cfg         *core.Config
 	cfgPath     string
 	dir         string
-	files       []core.FileInfo
+	files       []core.FileInfo       // all files from scan
+	filtered    []int                 // indices into files after filter
+	selected    map[int]bool          // index → checked
 	table       *widget.Table
 	statusLbl   *widget.Label
+	filterEntry *widget.Entry
 	organizeBtn *widget.Button
 	undoBtn     *widget.Button
 }
@@ -39,22 +42,57 @@ func main() {
 	}
 
 	myApp := &App{
-		window:  w,
-		cfg:     cfg,
-		cfgPath: cfgPath,
+		window:   w,
+		cfg:      cfg,
+		cfgPath:  cfgPath,
+		selected: make(map[int]bool),
+		filtered: []int{},
 	}
 
-	// Toolbar — no icons, clean text only
+	// Toolbar
 	folderBtn := widget.NewButton("Select Folder", myApp.selectFolder)
 	folderBtn.Importance = widget.HighImportance
 
-	myApp.organizeBtn = widget.NewButton("Organize", myApp.organize)
+	myApp.organizeBtn = widget.NewButton("Organize (0)", myApp.organize)
 	myApp.organizeBtn.Disable()
 	myApp.undoBtn = widget.NewButton("Undo", myApp.undo)
 	myApp.undoBtn.Disable()
 	configBtn := widget.NewButton("Config", myApp.showConfigEditor)
 
 	toolbar := container.NewHBox(folderBtn, widget.NewSeparator(), myApp.organizeBtn, myApp.undoBtn, widget.NewSeparator(), configBtn)
+
+	// Filter bar
+	myApp.filterEntry = widget.NewEntry()
+	myApp.filterEntry.SetPlaceHolder("Filter by name, ext, or category...")
+	myApp.filterEntry.OnChanged = func(text string) {
+		myApp.applyFilter(text)
+	}
+
+	selectAllBtn := widget.NewButton("All", func() {
+		for _, idx := range myApp.filtered {
+			myApp.selected[idx] = true
+		}
+		myApp.table.Refresh()
+		myApp.updateOrganizeCount()
+	})
+	noneBtn := widget.NewButton("None", func() {
+		myApp.selected = make(map[int]bool)
+		myApp.table.Refresh()
+		myApp.updateOrganizeCount()
+	})
+	invertBtn := widget.NewButton("Invert", func() {
+		for _, idx := range myApp.filtered {
+			myApp.selected[idx] = !myApp.selected[idx]
+		}
+		myApp.table.Refresh()
+		myApp.updateOrganizeCount()
+	})
+
+	filterBar := container.NewBorder(nil, nil,
+		container.NewHBox(selectAllBtn, noneBtn, invertBtn),
+		nil,
+		myApp.filterEntry,
+	)
 
 	// Table
 	myApp.table = myApp.makeTable()
@@ -64,7 +102,7 @@ func main() {
 
 	// Layout
 	content := container.NewBorder(
-		container.NewVBox(toolbar, widget.NewSeparator()),
+		container.NewVBox(toolbar, widget.NewSeparator(), filterBar, widget.NewSeparator()),
 		container.NewHBox(myApp.statusLbl),
 		nil, nil,
 		myApp.table,
@@ -90,31 +128,89 @@ func (a *App) scanDir() {
 		return
 	}
 	a.files = files
-	a.table.Refresh()
+	a.selected = make(map[int]bool)
+	// Select all by default
+	for i := range a.files {
+		a.selected[i] = true
+	}
+	a.filterEntry.SetText("") // clear filter
+	a.applyFilter("")
 	a.organizeBtn.Enable()
 	a.undoBtn.Enable()
-	a.statusLbl.SetText(fmt.Sprintf("%d files found in %s", len(files), a.dir))
+	a.updateStatus()
+}
+
+func (a *App) applyFilter(text string) {
+	text = strings.ToLower(strings.TrimSpace(text))
+	a.filtered = []int{}
+	for i, f := range a.files {
+		if text == "" {
+			a.filtered = append(a.filtered, i)
+			continue
+		}
+		if strings.Contains(strings.ToLower(f.Name), text) ||
+			strings.Contains(strings.ToLower(f.Ext), text) ||
+			strings.Contains(strings.ToLower(f.Category), text) {
+			a.filtered = append(a.filtered, i)
+		}
+	}
+	a.table.Refresh()
+	a.updateOrganizeCount()
+	a.updateStatus()
+}
+
+func (a *App) updateOrganizeCount() {
+	count := 0
+	for _, idx := range a.filtered {
+		if a.selected[idx] {
+			count++
+		}
+	}
+	a.organizeBtn.SetText(fmt.Sprintf("Organize (%d)", count))
+}
+
+func (a *App) updateStatus() {
+	total := len(a.files)
+	shown := len(a.filtered)
+	checked := 0
+	for _, idx := range a.filtered {
+		if a.selected[idx] {
+			checked++
+		}
+	}
+	if total == shown {
+		a.statusLbl.SetText(fmt.Sprintf("%d files, %d selected", total, checked))
+	} else {
+		a.statusLbl.SetText(fmt.Sprintf("%d files shown (%d total), %d selected", shown, total, checked))
+	}
 }
 
 func (a *App) organize() {
-	if len(a.files) == 0 {
-		a.statusLbl.SetText("No files to organize")
+	// Collect checked files
+	var toMove []core.FileInfo
+	for _, idx := range a.filtered {
+		if a.selected[idx] {
+			toMove = append(toMove, a.files[idx])
+		}
+	}
+	if len(toMove) == 0 {
+		a.statusLbl.SetText("No files selected")
 		return
 	}
 	dialog.ShowConfirm("Organize",
-		fmt.Sprintf("Move %d files into category folders?", len(a.files)),
+		fmt.Sprintf("Move %d selected files into category folders?", len(toMove)),
 		func(ok bool) {
 			if !ok {
 				return
 			}
 			moved := 0
-			for _, f := range a.files {
+			for _, f := range toMove {
 				if err := core.Move(a.dir, f); err != nil {
 					continue
 				}
 				moved++
 			}
-			a.statusLbl.SetText(fmt.Sprintf("Moved %d/%d files (use Undo to revert)", moved, len(a.files)))
+			a.statusLbl.SetText(fmt.Sprintf("Moved %d/%d files (use Undo to revert)", moved, len(toMove)))
 			a.scanDir()
 		},
 		a.window,
@@ -133,57 +229,91 @@ func (a *App) undo() {
 func (a *App) makeTable() *widget.Table {
 	table := widget.NewTable(
 		func() (int, int) {
-			return len(a.files) + 1, 3 // +1 for header
+			return len(a.filtered) + 1, 4 // +1 header, 4 cols: check, name, ext, cat
 		},
 		func() fyne.CanvasObject {
+			// Template: container with a check and a label stacked
+			check := widget.NewCheck("", nil)
 			label := widget.NewLabel("template")
 			label.Wrapping = fyne.TextTruncate
-			return label
+			return container.NewStack(check, label)
 		},
 		func(id widget.TableCellID, obj fyne.CanvasObject) {
-			label := obj.(*widget.Label)
+			cell := obj.(*fyne.Container)
+			check := cell.Objects[0].(*widget.Check)
+			label := cell.Objects[1].(*widget.Label)
+
 			if id.Row == 0 {
+				// Header row
+				check.Hide()
+				label.Show()
+				label.TextStyle = fyne.TextStyle{Bold: true}
 				switch id.Col {
 				case 0:
-					label.SetText("Name")
-					label.TextStyle = fyne.TextStyle{Bold: true}
+					label.SetText("") // checkbox header empty
 				case 1:
-					label.SetText("Ext")
-					label.TextStyle = fyne.TextStyle{Bold: true}
+					label.SetText("Name")
 				case 2:
+					label.SetText("Ext")
+				case 3:
 					label.SetText("Category")
-					label.TextStyle = fyne.TextStyle{Bold: true}
 				}
 				return
 			}
-			label.TextStyle = fyne.TextStyle{}
-			if id.Row-1 >= len(a.files) {
+
+			// Data rows
+			if id.Row-1 >= len(a.filtered) {
+				check.Hide()
+				label.Show()
 				label.SetText("")
 				return
 			}
-			f := a.files[id.Row-1]
+			fileIdx := a.filtered[id.Row-1]
+			f := a.files[fileIdx]
+
 			switch id.Col {
 			case 0:
-				label.SetText(f.Name)
+				// Checkbox column
+				label.Hide()
+				check.Show()
+				check.OnChanged = func(val bool) {
+					a.selected[fileIdx] = val
+					a.updateOrganizeCount()
+					a.updateStatus()
+				}
+				check.SetChecked(a.selected[fileIdx])
 			case 1:
-				label.SetText(f.Ext)
+				check.Hide()
+				label.Show()
+				label.TextStyle = fyne.TextStyle{}
+				label.SetText(f.Name)
 			case 2:
+				check.Hide()
+				label.Show()
+				label.TextStyle = fyne.TextStyle{}
+				label.SetText(f.Ext)
+			case 3:
+				check.Hide()
+				label.Show()
+				label.TextStyle = fyne.TextStyle{}
 				label.SetText(f.Category)
 			}
 		},
 	)
 
-	table.SetColumnWidth(0, 350)
-	table.SetColumnWidth(1, 80)
-	table.SetColumnWidth(2, 200)
+	table.SetColumnWidth(0, 40)  // checkbox
+	table.SetColumnWidth(1, 320) // name
+	table.SetColumnWidth(2, 80)  // ext
+	table.SetColumnWidth(3, 200) // category
 
 	table.OnSelected = func(id widget.TableCellID) {
 		if id.Row == 0 {
 			table.UnselectAll()
 			return
 		}
-		if id.Col == 2 && id.Row-1 < len(a.files) {
-			a.showCategoryPicker(id.Row - 1)
+		if id.Col == 3 && id.Row-1 < len(a.filtered) {
+			fileIdx := a.filtered[id.Row-1]
+			a.showCategoryPicker(fileIdx)
 		}
 		table.UnselectAll()
 	}
@@ -246,16 +376,17 @@ func (a *App) showConfigEditor() {
 		}
 		rule := categories[name]
 		a.showCategoryEditor(name, rule, func() {
+			orderedCats = a.cfg.ListCategories()
+			categories = a.cfg.Categories
 			list.Refresh()
 		})
 		list.UnselectAll()
 	}
 
-	// Buttons
 	addBtn := widget.NewButton("Add Category", func() {
 		a.showAddCategoryDialog(func() {
-			// refresh list after add
 			orderedCats = a.cfg.ListCategories()
+			categories = a.cfg.Categories
 			list.Refresh()
 		})
 	})
@@ -284,11 +415,9 @@ func (a *App) showConfigEditor() {
 	)
 
 	content := container.NewBorder(header, nil, nil, nil, list)
-	// Wrap in a container with minimum size so the dialog is large enough
 	wrapper := container.New(layout.NewMaxLayout(), content)
 	wrapper.Resize(fyne.NewSize(550, 450))
 
-	// Use a custom dialog with explicit size
 	d := dialog.NewCustom("Config Editor", "Close", wrapper, a.window)
 	d.Resize(fyne.NewSize(550, 450))
 	d.Show()
@@ -329,7 +458,6 @@ func (a *App) showCategoryEditor(name string, rule core.CategoryRule, onSaved fu
 		container.NewHBox(layout.NewSpacer(), deleteBtn),
 	)
 
-	// Scroll wrapper so content doesn't clip
 	scroll := container.NewVScroll(form)
 	scroll.SetMinSize(fyne.NewSize(500, 420))
 

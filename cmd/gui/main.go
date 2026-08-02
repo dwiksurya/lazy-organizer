@@ -129,11 +129,10 @@ func (a *App) scanDir() {
 	}
 	a.files = files
 	a.selected = make(map[int]bool)
-	// Select all by default
 	for i := range a.files {
 		a.selected[i] = true
 	}
-	a.filterEntry.SetText("") // clear filter
+	a.filterEntry.SetText("")
 	a.applyFilter("")
 	a.organizeBtn.Enable()
 	a.undoBtn.Enable()
@@ -186,7 +185,6 @@ func (a *App) updateStatus() {
 }
 
 func (a *App) organize() {
-	// Collect checked files
 	var toMove []core.FileInfo
 	for _, idx := range a.filtered {
 		if a.selected[idx] {
@@ -229,10 +227,9 @@ func (a *App) undo() {
 func (a *App) makeTable() *widget.Table {
 	table := widget.NewTable(
 		func() (int, int) {
-			return len(a.filtered) + 1, 4 // +1 header, 4 cols: check, name, ext, cat
+			return len(a.filtered) + 1, 4
 		},
 		func() fyne.CanvasObject {
-			// Template: container with a check and a label stacked
 			check := widget.NewCheck("", nil)
 			label := widget.NewLabel("template")
 			label.Wrapping = fyne.TextTruncate
@@ -244,13 +241,12 @@ func (a *App) makeTable() *widget.Table {
 			label := cell.Objects[1].(*widget.Label)
 
 			if id.Row == 0 {
-				// Header row
 				check.Hide()
 				label.Show()
 				label.TextStyle = fyne.TextStyle{Bold: true}
 				switch id.Col {
 				case 0:
-					label.SetText("") // checkbox header empty
+					label.SetText("")
 				case 1:
 					label.SetText("Name")
 				case 2:
@@ -261,7 +257,6 @@ func (a *App) makeTable() *widget.Table {
 				return
 			}
 
-			// Data rows
 			if id.Row-1 >= len(a.filtered) {
 				check.Hide()
 				label.Show()
@@ -273,7 +268,6 @@ func (a *App) makeTable() *widget.Table {
 
 			switch id.Col {
 			case 0:
-				// Checkbox column
 				label.Hide()
 				check.Show()
 				check.OnChanged = func(val bool) {
@@ -301,10 +295,10 @@ func (a *App) makeTable() *widget.Table {
 		},
 	)
 
-	table.SetColumnWidth(0, 40)  // checkbox
-	table.SetColumnWidth(1, 320) // name
-	table.SetColumnWidth(2, 80)  // ext
-	table.SetColumnWidth(3, 200) // category
+	table.SetColumnWidth(0, 40)
+	table.SetColumnWidth(1, 320)
+	table.SetColumnWidth(2, 80)
+	table.SetColumnWidth(3, 200)
 
 	table.OnSelected = func(id widget.TableCellID) {
 		if id.Row == 0 {
@@ -543,7 +537,7 @@ func (a *App) showEditFallbackDialog() {
 		a.cfg.Fallback = entry.Text
 		a.saveConfig()
 	}, a.window)
-	d.Resize(fyne.NewSize(400, 200))
+	d.Resize(fyne.NewSize(420, 220))
 	d.Show()
 }
 

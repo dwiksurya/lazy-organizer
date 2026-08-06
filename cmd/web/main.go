@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -64,6 +65,7 @@ func main() {
 	sub, _ := fs.Sub(webFS, "web")
 	mux.Handle("/", http.FileServer(http.FS(sub)))
 	mux.HandleFunc("/api/scan", s.handleScan)
+	mux.HandleFunc("/api/pick-folder", s.handlePickFolder)
 	mux.HandleFunc("/api/organize", s.handleOrganize)
 	mux.HandleFunc("/api/undo", s.handleUndo)
 	mux.HandleFunc("/api/config", s.handleConfig)
@@ -132,6 +134,38 @@ func (s *server) handleScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]any{"files": files})
+}
+
+func (s *server) handlePickFolder(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, 405, map[string]string{"error": "method not allowed"})
+		return
+	}
+	path, err := pickFolder()
+	if err != nil || path == "" {
+		writeJSON(w, 200, map[string]any{"path": ""})
+		return
+	}
+	writeJSON(w, 200, map[string]any{"path": path})
+}
+
+// pickFolder opens a native folder picker on the user's desktop.
+func pickFolder() (string, error) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		script := "Add-Type -AssemblyName System.Windows.Forms; $f=New-Object System.Windows.Forms.FolderBrowserDialog; $f.Description='Select Folder'; if($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$f.SelectedPath}"
+		cmd = exec.Command("powershell", "-NoProfile", "-STA", "-Command", script)
+	case "darwin":
+		cmd = exec.Command("osascript", "-e", `POSIX path of (choose folder with prompt "Select Folder")`)
+	default:
+		cmd = exec.Command("zenity", "--file-selection", "--directory", "--title=Select Folder")
+	}
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(strings.TrimSpace(string(out)), `/\`), nil
 }
 
 func (s *server) handleOrganize(w http.ResponseWriter, r *http.Request) {

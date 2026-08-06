@@ -70,7 +70,7 @@ go build -o lazy-organizer .
 
 ## Desktop App Features
 
-- **📂 Folder path input** — type the folder to organize, click Scan
+- **📂 Folder picker** — **Browse…** button opens a native folder dialog (no typing)
 - **File Table** — shows all files with Name, Extension, Category
 - **Category Dropdown** — change category per file
 - **Filter bar** — search by name, extension, or category

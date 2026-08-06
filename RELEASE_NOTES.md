@@ -1,13 +1,10 @@
-# lazy-organizer v1.2.0
+# lazy-organizer v1.2.1
 
-New browser-based desktop GUI — works on ANY Windows machine (no GPU/OpenGL required).
+Native folder picker.
 
 ## What's New
 
-- **GUI rebuilt as local web app** (`cmd/web`) — the exe starts a local server and opens your browser. Pure Go, no CGO, no OpenGL, no extra DLLs. Fixes the blank-window issue on VMs / RDP / machines without OpenGL 2.0.
-- **Smaller binary** — 6MB (was 12MB)
-- **Windows, Linux, macOS** — same GUI everywhere
-- Same features: file table with checkboxes, filter bar, category picker, config editor, organize with confirmation, undo
+- **Browse… button** — pick a folder with a native dialog instead of typing the path (PowerShell folder dialog on Windows, osascript on macOS, zenity on Linux). Fills the path and scans automatically.
 
 ## Downloads
 
@@ -23,6 +20,6 @@ New browser-based desktop GUI — works on ANY Windows machine (no GPU/OpenGL re
 
 1. Download `LazyOrganizer.exe`
 2. Double-click — your browser opens with the organizer
-3. Type a folder path (e.g. `C:\Users\you\Downloads`) → Scan → review → **Organize**
+3. Click **Browse…** → pick a folder → review → **Organize**
 
-Config lives at `%APPDATA%\lazy-organizer\categories.yaml` (Linux: `~/.config/lazy-organizer/`, macOS: `~/Library/Application Support/lazy-organizer/`).
+Config lives at `%APPDATA%\lazy-organizer\categories.yaml`.

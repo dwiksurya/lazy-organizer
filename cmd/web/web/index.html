@@ -45,7 +45,8 @@
 <header>
   <h1>📁 Lazy Organizer</h1>
   <input type="text" id="dir" placeholder="Folder path, e.g. C:\Users\you\Downloads">
-  <button id="scanBtn" class="primary">Scan</button>
+  <button id="pickBtn" class="primary">Browse…</button>
+  <button id="scanBtn">Scan</button>
 </header>
 <div id="toolbar">
   <input type="text" id="filter" placeholder="Filter by name, ext, or category...">
@@ -171,6 +172,13 @@ async function scan() {
 }
 
 $("scanBtn").onclick = scan;
+$("pickBtn").onclick = async () => {
+  try {
+    const res = await fetch("/api/pick-folder", { method: "POST" });
+    const data = await res.json();
+    if (data.path) { $("dir").value = data.path; await scan(); }
+  } catch (e) { setStatus("", e.message); }
+};
 $("dir").addEventListener("keydown", e => { if (e.key === "Enter") scan(); });
 $("filter").oninput = applyFilter;
 $("allBtn").onclick = () => { filtered.forEach(f => selected.add(f.name)); render(); };

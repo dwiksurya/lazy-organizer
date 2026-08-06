@@ -5,7 +5,7 @@
 set -e
 
 REPO="dwiksurya/lazy-organizer"
-TAG="v1.0.0"
+TAG="v1.1.0"
 TOKEN="${GITHUB_TOKEN:?Set GITHUB_TOKEN first}"
 
 echo "Creating release $TAG on $REPO..."
@@ -39,12 +39,12 @@ fi
 echo "Release created: ID=$RELEASE_ID"
 
 # Upload assets
-for file in dist/*.tar.gz; do
+for file in dist/LazyOrganizer.exe dist/*.tar.gz; do
   name=$(basename "$file")
   echo "Uploading $name..."
   curl -s -X POST \
     -H "Authorization: token $TOKEN" \
-    -H "Content-Type: application/gzip" \
+    -H "Content-Type: application/octet-stream" \
     "https://api.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=$name" \
     --data-binary @"$file" | jq -r '.state // .message'
 done

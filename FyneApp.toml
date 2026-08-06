@@ -1,8 +1,8 @@
 [Details]
   Name = "Lazy Organizer"
   ID = "com.lazy-organizer"
-  Version = "1.1.0"
-  Build = 2
+  Version = "1.1.1"
+  Build = 3
   Icon = "Icon.png"
   Release = true
 

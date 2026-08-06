@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -30,7 +34,23 @@ type App struct {
 	undoBtn     *widget.Button
 }
 
+func logLine(msg string) {
+	logPath := filepath.Join(os.TempDir(), "lazy-organizer.log")
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return
+	}
+	fmt.Fprintf(f, "%s %s\n", time.Now().Format(time.RFC3339), msg)
+	f.Close()
+}
+
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			logLine(fmt.Sprintf("PANIC: %v\n%s", r, debug.Stack()))
+		}
+	}()
+	logLine("starting")
 	a := app.NewWithID("com.lazy-organizer")
 	w := a.NewWindow("lazy-organizer")
 	w.Resize(fyne.NewSize(900, 600))

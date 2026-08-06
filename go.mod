@@ -2,7 +2,15 @@ module lazy-organizer
 
 go 1.22.5
 
-require gopkg.in/yaml.v3 v3.0.1
+require (
+	github.com/lxn/walk v0.0.0-20210112085537-c389da54e794
+	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
+	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
+	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
+)
 
 require (
 	fyne.io/fyne/v2 v2.8.0

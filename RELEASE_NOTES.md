@@ -1,25 +1,29 @@
-# lazy-organizer v1.2.1
+# lazy-organizer v1.3.0
 
-Native folder picker.
+Native Windows desktop app — no web, no browser.
 
 ## What's New
 
-- **Browse… button** — pick a folder with a native dialog instead of typing the path (PowerShell folder dialog on Windows, osascript on macOS, zenity on Linux). Fills the path and scans automatically.
+- **GUI rebuilt as native Win32 app** (`cmd/win`, lxn/walk) — real Windows window, native folder picker, native dialogs.
+- **Why:** the previous browser-based GUI was flagged by antivirus (localhost server + PowerShell picker + browser auto-open = classic AV heuristic). The native app has no network, no PowerShell, no spawned processes — standard Win32 API only.
+- **No OpenGL, no GPU, no extra DLLs** — works on any Windows x86_64 (VM/RDP included).
+- Same features: file table with checkboxes, filter bar, All/None/Invert, category change (double-click row), organize with confirmation, undo, config editor.
+- 5.7MB binary.
 
 ## Downloads
 
 | File | Platform | Size |
 |------|----------|------|
-| `LazyOrganizer.exe` | Windows x86_64 | 6MB |
-| `LazyOrganizer-windows-amd64.tar.gz` | Windows x86_64 | 2.5MB |
-| `LazyOrganizer-linux-amd64.tar.gz` | Linux x86_64 | 2.4MB |
-| `LazyOrganizer-darwin-arm64.tar.gz` | macOS Apple Silicon | 2.3MB |
-| `LazyOrganizer-darwin-amd64.tar.gz` | macOS Intel | 2.4MB |
+| `LazyOrganizer.exe` | Windows x86_64 | 5.7MB |
+| `LazyOrganizer-windows-amd64.tar.gz` | Windows x86_64 | 2MB |
 
 ## Quick Start (Windows)
 
 1. Download `LazyOrganizer.exe`
-2. Double-click — your browser opens with the organizer
-3. Click **Browse…** → pick a folder → review → **Organize**
+2. Double-click → **Select Folder...** → pick a folder → review → **Organize**
 
 Config lives at `%APPDATA%\lazy-organizer\categories.yaml`.
+
+## Note on SmartScreen
+
+If Windows shows "Windows protected your PC": click **More info → Run anyway** (or right-click → Properties → Unblock). That's the "downloaded from internet" mark, not a virus detection. The binary itself is a normal unsigned Win32 app.

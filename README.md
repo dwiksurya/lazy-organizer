@@ -1,34 +1,23 @@
 # lazy-organizer
 
-CLI + Desktop app to organize messy folders. Cross-platform: macOS, Linux, Windows.
+CLI + native Windows desktop app to organize messy folders.
 
 ## Downloads
 
 [![GitHub Release](https://img.shields.io/github/v/release/dwiksurya/lazy-organizer?color=blue)](https://github.com/dwiksurya/lazy-organizer/releases/latest)
 
-**Desktop GUI** — double-click to run, browser opens automatically. No install, no GPU/OpenGL required.
+**Windows desktop app** — native Win32 GUI, no install, no GPU/OpenGL, no extra DLLs.
 
 | File | Platform |
 |------|----------|
 | [LazyOrganizer.exe](https://github.com/dwiksurya/lazy-organizer/releases/latest/download/LazyOrganizer.exe) | Windows x86_64 |
 | [LazyOrganizer-windows-amd64.tar.gz](https://github.com/dwiksurya/lazy-organizer/releases/latest/download/LazyOrganizer-windows-amd64.tar.gz) | Windows x86_64 |
-| [LazyOrganizer-linux-amd64.tar.gz](https://github.com/dwiksurya/lazy-organizer/releases/latest/download/LazyOrganizer-linux-amd64.tar.gz) | Linux x86_64 |
-| [LazyOrganizer-darwin-amd64.tar.gz](https://github.com/dwiksurya/lazy-organizer/releases/latest/download/LazyOrganizer-darwin-amd64.tar.gz) | macOS Intel |
-| [LazyOrganizer-darwin-arm64.tar.gz](https://github.com/dwiksurya/lazy-organizer/releases/latest/download/LazyOrganizer-darwin-arm64.tar.gz) | macOS Apple Silicon |
 
-CLI binaries for all platforms are on the [Releases page](https://github.com/dwiksurya/lazy-organizer/releases).
+CLI binaries for Linux/macOS/Windows are on the [Releases page](https://github.com/dwiksurya/lazy-organizer/releases).
 
 ## Quick Start — Desktop App
 
-**Windows:** download `LazyOrganizer.exe`, double-click — your browser opens with the organizer.
-
-**Linux/macOS:**
-```bash
-tar xzf LazyOrganizer-linux-amd64.tar.gz
-./LazyOrganizer-linux-amd64
-```
-
-Type a folder path (e.g. `C:\Users\you\Downloads` or `~/Downloads`) → **Scan** → review → **Organize**.
+**Windows:** download `LazyOrganizer.exe`, double-click. Click **Select Folder...** → pick a folder → review → **Organize**.
 
 ## Quick Start — CLI
 
@@ -70,9 +59,9 @@ go build -o lazy-organizer .
 
 ## Desktop App Features
 
-- **📂 Folder picker** — **Browse…** button opens a native folder dialog (no typing)
-- **File Table** — shows all files with Name, Extension, Category
-- **Category Dropdown** — change category per file
+- **📂 Select Folder** — native folder picker dialog
+- **File Table** — checkbox per file, Name / Ext / Category columns
+- **Category change** — double-click a row to pick a category
 - **Filter bar** — search by name, extension, or category
 - **Select All / None / Invert** — bulk selection
 - **▶ Organize** — move checked files with confirmation
@@ -95,10 +84,9 @@ lazy-organizer/
 │   ├── scanner.go          ← directory scanner
 │   ├── mover.go            ← file mover + undo
 │   └── core_test.go        ← tests
-├── cmd/web/                ← desktop GUI (local web app, pure Go)
-│   ├── main.go             ← server + API (reuses internal/core)
-│   └── web/index.html      ← UI (vanilla JS)
-├── cmd/gui/                ← legacy Fyne GUI (needs OpenGL)
+├── cmd/win/               ← native Windows GUI (lxn/walk, pure Go)
+│   └── main.go            ← Win32 GUI: table, filter, config editor
+├── cmd/gui/               ← legacy Fyne GUI (needs OpenGL)
 │   └── main.go
 ├── main.go                 ← CLI entry point
 ├── interactive.go          ← CLI interactive mode
@@ -115,8 +103,8 @@ cd lazy-organizer
 # CLI (pure Go)
 go build -o lazy-organizer .
 
-# Desktop GUI (pure Go — no CGO, works everywhere)
-go build -o LazyOrganizer ./cmd/web/
+# Desktop GUI (native Windows — pure Go, no CGO)
+GOOS=windows GOARCH=amd64 go build -ldflags "-H windowsgui" -o LazyOrganizer.exe ./cmd/win/
 
 # Legacy Fyne GUI (needs OpenGL dev libs)
 go build -o lazy-organizer-gui ./cmd/gui/

@@ -11,8 +11,8 @@ import (
 )
 
 type CategoryRule struct {
-	Extensions []string `yaml:"extensions"`
-	Keywords   []string `yaml:"keywords"`
+	Extensions []string `yaml:"extensions" json:"extensions"`
+	Keywords   []string `yaml:"keywords" json:"keywords"`
 }
 
 type Config struct {

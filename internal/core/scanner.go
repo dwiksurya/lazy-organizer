@@ -7,10 +7,10 @@ import (
 )
 
 type FileInfo struct {
-	Name     string
-	Path     string
-	Ext      string
-	Category string
+	Name     string `json:"name"`
+	Path     string `json:"path"`
+	Ext      string `json:"ext"`
+	Category string `json:"category"`
 }
 
 func Scan(dir string, cfg *Config) ([]FileInfo, error) {
